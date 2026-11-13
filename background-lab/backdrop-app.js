@@ -187,22 +187,23 @@
     layoutCanvas();
   }
 
+  /* fit the bitmap into the space between the top bar and the sheet */
   function layoutCanvas() {
-    /* Fit the square preview inside the space above the sheet, keeping the
-       artwork's own aspect ratio so what you see matches the saved file. */
+    /* measure the bars rather than guess, so the art never slides under them */
+    var bar = document.querySelector(".topBar");
+    var top = bar ? Math.ceil(bar.getBoundingClientRect().bottom) + 6 : 56;
+    var sheetRect = sheet.getBoundingClientRect();
+    var bottom = sheetRect.height + 10;
+    var availH = Math.max(120, window.innerHeight - top - bottom - 8);
+    var availW = Math.max(120, window.innerWidth - 24);
     var size = SIZES[v("size")] || SIZES.portrait;
-    var ratio = size[1] / size[0];
-    canvas.style.aspectRatio = size[0] + " / " + size[1];
-    if (ratio > 1.05) {
-      canvas.style.width = "min(78vw, 42vh)";
-      canvas.style.height = "auto";
-    } else if (ratio < 0.95) {
-      canvas.style.width = "min(88vw, 68vh)";
-      canvas.style.height = "auto";
-    } else {
-      canvas.style.width = "min(86vw, 56vh)";
-      canvas.style.height = "auto";
-    }
+    var ar = size[0] / size[1];
+    var w = availW, h = w / ar;
+    if (h > availH) { h = availH; w = h * ar; }
+    canvas.style.width = Math.round(w) + "px";
+    canvas.style.height = Math.round(h) + "px";
+    canvas.style.top = Math.round(top + (availH - h) / 2) + "px";
+    canvas.style.left = Math.round((window.innerWidth - w) / 2) + "px";
   }
 
   function schedule() {
@@ -530,4 +531,8 @@
   updateHeader();
   renderPreview();
   window.addEventListener("resize", layoutCanvas);
+  /* the sheet animates its height, so re-fit when that animation settles */
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { layoutCanvas(); }).observe(sheet);
+  }
 })();
