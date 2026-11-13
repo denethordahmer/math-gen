@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>Math Gen</title>
+<link rel="icon" href="icon-192.png">
+<style>
+/* Rubik Glitch is a distorted display face: it carries the wordmark only. The
+   cards stay in Space Grotesk, because the glitch treatment makes small text
+   hard to read. Both are bundled, so the page needs no network. */
+@font-face {
+  font-family: "HubTitle";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/rubikglitch.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "HubUI";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/spacegrotesk.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --bg: #0b0d12;
+  --panel: #14171f;
+  --panel-2: #1a1e28;
+  --border: #262b38;
+  --text: #eef0f7;
+  --dim: #8b93a8;
+  --violet: #7c5cff;   /* Flow Field */
+  --red: #e63b2e;      /* Inkwork Tiles */
+  --gold: #c9a24a;     /* Thicket */
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "HubUI", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: calc(28px + env(safe-area-inset-top, 0px)) 18px
+           calc(32px + env(safe-area-inset-bottom, 0px));
+}
+
+header { text-align: center; margin-bottom: 26px; }
+
+.mark {
+  font-family: "HubTitle", "HubUI", sans-serif;
+  font-size: clamp(2.1rem, 11vw, 2.9rem);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.15;
+  background: linear-gradient(100deg, var(--violet), var(--red) 55%, var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tagline {
+  margin-top: 8px;
+  font-size: 0.86rem;
+  color: var(--dim);
+  letter-spacing: 0.01em;
+}
+
+.grid { display: flex; flex-direction: column; gap: 12px; }
+
+/* Each card is a link to a folder's index.html, so it works from the phone's
+   filesystem with no server. */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  color: inherit;
+  text-decoration: none;
+  transition: background .12s ease, transform .08s ease, border-color .12s ease;
+}
+.card:hover { background: var(--panel-2); border-color: #37405094; }
+.card:active { transform: scale(0.985); }
+
+.thumb {
+  width: 58px; height: 58px;
+  border-radius: 13px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.meta { flex: 1; min-width: 0; }
+
+.name {
+  font-size: 1.04rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.desc {
+  margin-top: 3px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+.count {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6c7488;
+}
+
+.arrow { color: #56607a; flex-shrink: 0; font-size: 1.1rem; }
+
+footer {
+  margin-top: 26px;
+  text-align: center;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: #5b6377;
+  letter-spacing: 0.02em;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="mark">Math Gen</div>
+    <div class="tagline">Pick a generator</div>
+  </header>
+
+  <div class="grid">
+
+    <a class="card" href="flow-field/index.html">
+      <img class="thumb" src="flow-field/icon/icon-192.png" alt="" width="58" height="58">
+      <div class="meta">
+        <div class="name"><span class="swatch" style="background:var(--violet)"></span>Flow Field</div>
+        <div class="desc">Particle trails drawn through a noise field.</div>
+        <div class="count">8 styles</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+
+    <a class="card" href="inkwork-tiles/index.html">
+      <img class="thumb" src="inkwork-tiles/icon/icon-192.png" alt="" width="58" height="58">
+      <div class="meta">
+        <div class="name"><span class="swatch" style="background:var(--red)"></span>Inkwork Tiles</div>
+        <div class="desc">Repeating printed patterns, knots and mosaics.</div>
+        <div class="count">11 styles</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+
+    <a class="card" href="thicket/index.html">
+      <img class="thumb" src="thicket/icon/icon-192.png" alt="" width="58" height="58">
+      <div class="meta">
+        <div class="name"><span class="swatch" style="background:var(--gold)"></span>Thicket</div>
+        <div class="desc">Botanical plates grown from a seed.</div>
+        <div class="count">10 styles</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+
+    <!-- To add a generator: copy its folder in beside these, add one <a> like
+         the ones above, then list it in README.md. -->
+
+
+  </div>
+
+  <footer>
+    Each generator saves its own image.<br>
+    Everything works offline.
+  </footer>
+
+</div>
+</body>
+</html>

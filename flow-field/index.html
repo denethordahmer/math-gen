@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080d">
+<title>Flow Field</title>
+<link rel="stylesheet" href="flow.css">
+</head>
+<body>
+
+<div class="appWrap">
+
+  <!-- ── Artwork canvas ── -->
+  <canvas id="flowBackdrop" aria-hidden="true"></canvas>
+  <canvas id="flowCanvas"></canvas>
+
+  <!-- ── Top bar ── -->
+  <div class="topBar">
+    <span class="topTitle">Flow Field</span>
+    <button id="btnRandomize" class="iconBtn" title="Randomize" type="button">⟳</button>
+    <button id="btnExport" class="iconBtn" title="Save image" type="button">↓</button>
+  </div>
+
+  <!-- ── Bottom sheet ── -->
+  <div class="sheet" id="sheet">
+
+    <div class="sheetHandle" id="sheetHandle">
+      <div class="sheetPill"></div>
+      <span class="sheetLabel" id="sheetLabel">Settings</span>
+      <button id="btnGenerate" class="generateBtn" type="button">Draw</button>
+    </div>
+
+    <div class="settingsList" id="settingsList">
+
+      <!-- ── PATTERN ── -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Pattern</div>
+
+        <div class="settingRow" data-key="engine">
+          <div class="settingRowInner">
+            <span class="settingName">Style</span>
+            <span class="settingVal" id="engineVal">Flow lines</span>
+          </div>
+          <div class="settingControl">
+            <select id="engine" class="bigSelect">
+              <optgroup label="Lines">
+                <option value="flow" selected>Flow lines</option>
+                <option value="engrave">Engraving</option>
+                <option value="ribbons">Ribbons</option>
+                <option value="vortex">Vortex</option>
+              </optgroup>
+              <optgroup label="Marks">
+                <option value="stipple">Stipple</option>
+                <option value="ticks">Ticks</option>
+                <option value="silk">Silk</option>
+              </optgroup>
+              <optgroup label="Maps">
+                <option value="contour">Contour</option>
+              </optgroup>
+            </select>
+            <p class="settingHint">Each style has its own settings below. Colour, seed and background carry across when you switch.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="seed">
+          <div class="settingRowInner">
+            <span class="settingName">Seed</span>
+            <span class="settingVal" id="seedVal">flow</span>
+          </div>
+          <div class="settingControl">
+            <input type="text" id="seed" class="bigText" value="flow" spellcheck="false" autocapitalize="off" autocomplete="off">
+            <button id="btnNewSeed" class="wideBtn" type="button">New seed</button>
+            <p class="settingHint">Same seed and same settings always give the same picture. Type anything.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── FIELD (shared) ── -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Field</div>
+
+        <div class="settingRow" data-key="particles">
+          <div class="settingRowInner">
+            <span class="settingName">Density</span>
+            <span class="settingVal" id="particlesVal">1200</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="particles" min="150" max="4000" step="50" value="1200" class="bigSlider">
+            <p class="settingHint">How much is drawn. Higher is fuller and slower to make.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="featureSize">
+          <div class="settingRowInner">
+            <span class="settingName">Feature size</span>
+            <span class="settingVal" id="featureSizeVal">70</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="featureSize" min="1" max="100" step="1" value="70" class="bigSlider">
+            <p class="settingHint">The size of the eddies in the field. Low gives small swirls, high gives broad sweeps.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="curl">
+          <div class="settingRowInner">
+            <span class="settingName">Bend</span>
+            <span class="settingVal" id="curlVal">0.9</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="curl" min="0.1" max="3" step="0.05" value="0.9" class="bigSlider">
+            <p class="settingHint">How tightly marks follow the field. Low runs almost straight, high coils.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="direction">
+          <div class="settingRowInner">
+            <span class="settingName">Colour direction</span>
+            <span class="settingVal" id="directionVal">Horizontal</span>
+          </div>
+          <div class="settingControl">
+            <select id="direction" class="bigSelect">
+              <option value="horizontal" selected>Left to right</option>
+              <option value="vertical">Top to bottom</option>
+              <option value="diagonal">Corner to corner</option>
+              <option value="radial">Out from the centre</option>
+              <option value="chaotic">Scattered</option>
+            </select>
+            <p class="settingHint">Which way the colours travel across the picture.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="mirror">
+          <div class="settingRowInner">
+            <span class="settingName">Mirror</span>
+            <span class="settingVal" id="mirrorVal">None</span>
+          </div>
+          <div class="settingControl">
+            <select id="mirror" class="bigSelect">
+              <option value="none" selected>None</option>
+              <option value="kaleido">Four-way (kaleidoscope)</option>
+            </select>
+            <p class="settingHint">Four-way draws one corner and mirrors it, so the picture is symmetrical about both axes.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="lineWeight">
+          <div class="settingRowInner">
+            <span class="settingName">Line weight</span>
+            <span class="settingVal" id="lineWeightVal">1.3</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="lineWeight" min="0.5" max="12" step="0.1" value="1.3" class="bigSlider">
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="opacity">
+          <div class="settingRowInner">
+            <span class="settingName">Opacity</span>
+            <span class="settingVal" id="opacityVal">0.5</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.5" class="bigSlider">
+            <p class="settingHint">Low lets strokes build up where they cross; high keeps every stroke solid.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── FLOW LINES ── -->
+      <div class="settingsGroup" data-engines="flow ribbons vortex">
+        <div class="groupLabel">Strand shape</div>
+
+        <div class="settingRow" data-key="steps">
+          <div class="settingRowInner">
+            <span class="settingName">Flow length</span>
+            <span class="settingVal" id="stepsVal">60</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="steps" min="10" max="250" step="5" value="60" class="bigSlider">
+            <p class="settingHint">How many steps each strand takes through the field.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="stepSize">
+          <div class="settingRowInner">
+            <span class="settingName">Step size</span>
+            <span class="settingVal" id="stepSizeVal">3</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="stepSize" min="1" max="12" step="1" value="3" class="bigSlider">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ENGRAVING ── -->
+      <div class="settingsGroup" data-engines="engrave">
+        <div class="groupLabel">Engraving</div>
+
+        <div class="settingRow" data-key="engraveGap">
+          <div class="settingRowInner">
+            <span class="settingName">Rule spacing</span>
+            <span class="settingVal" id="engraveGapVal">14</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="engraveGap" min="3" max="40" step="1" value="14" class="bigSlider">
+            <p class="settingHint">Distance between the ruled lines on the saved image.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="engraveWobble">
+          <div class="settingRowInner">
+            <span class="settingName">Wobble</span>
+            <span class="settingVal" id="engraveWobbleVal">30</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="engraveWobble" min="0" max="100" step="1" value="30" class="bigSlider">
+            <p class="settingHint">How far each rule wanders from being straight, like a hand-cut plate.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RIBBONS ── -->
+      <div class="settingsGroup" data-engines="ribbons">
+        <div class="groupLabel">Ribbons</div>
+
+        <div class="settingRow" data-key="ribbonWidth">
+          <div class="settingRowInner">
+            <span class="settingName">Band width</span>
+            <span class="settingVal" id="ribbonWidthVal">14</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="ribbonWidth" min="2" max="60" step="1" value="14" class="bigSlider">
+            <p class="settingHint">Each band is drawn wide and faint, then narrow and bright, which gives it a lit core.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SILK ── -->
+      <div class="settingsGroup" data-engines="silk">
+        <div class="groupLabel">Silk</div>
+
+        <div class="settingRow" data-key="silkLength">
+          <div class="settingRowInner">
+            <span class="settingName">Stroke length</span>
+            <span class="settingVal" id="silkLengthVal">1</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="silkLength" min="0.3" max="3" step="0.1" value="1" class="bigSlider">
+            <p class="settingHint">Short strokes read as soft smoke; long ones as brushed hair.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CONTOUR ── -->
+      <div class="settingsGroup" data-engines="contour">
+        <div class="groupLabel">Contour</div>
+
+        <div class="settingRow" data-key="contourLevels">
+          <div class="settingRowInner">
+            <span class="settingName">Levels</span>
+            <span class="settingVal" id="contourLevelsVal">12</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="contourLevels" min="3" max="30" step="1" value="12" class="bigSlider">
+            <p class="settingHint">How many height lines the field is cut into.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="contourBand">
+          <div class="settingRowInner">
+            <span class="settingName">Shading</span>
+            <span class="settingVal" id="contourBandVal">3</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="contourBand" min="0" max="8" step="1" value="3" class="bigSlider">
+            <p class="settingHint">Shades every nth band, like a topographic map. Zero draws lines only.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TICKS ── -->
+      <div class="settingsGroup" data-engines="ticks">
+        <div class="groupLabel">Ticks</div>
+
+        <div class="settingRow" data-key="tickGap">
+          <div class="settingRowInner">
+            <span class="settingName">Spacing</span>
+            <span class="settingVal" id="tickGapVal">18</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="tickGap" min="6" max="60" step="1" value="18" class="bigSlider">
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="tickLength">
+          <div class="settingRowInner">
+            <span class="settingName">Dash length</span>
+            <span class="settingVal" id="tickLengthVal">10</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="tickLength" min="3" max="40" step="1" value="10" class="bigSlider">
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="tickJitter">
+          <div class="settingRowInner">
+            <span class="settingName">Jitter</span>
+            <span class="settingVal" id="tickJitterVal">35</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="tickJitter" min="0" max="100" step="1" value="35" class="bigSlider">
+            <p class="settingHint">Offsets each dash from the grid. Zero is a neat comb, high is a scatter.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VORTEX ── -->
+      <div class="settingsGroup" data-engines="vortex">
+        <div class="groupLabel">Vortex</div>
+
+        <div class="settingRow" data-key="vortexTurn">
+          <div class="settingRowInner">
+            <span class="settingName">Turns</span>
+            <span class="settingVal" id="vortexTurnVal">3</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="vortexTurn" min="0.5" max="8" step="0.1" value="3" class="bigSlider">
+            <p class="settingHint">How many times each strand circles the centre on its way out.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="vortexTurb">
+          <div class="settingRowInner">
+            <span class="settingName">Turbulence</span>
+            <span class="settingVal" id="vortexTurbVal">1</span>
+          </div>
+          <div class="settingControl">
+            <input type="range" id="vortexTurb" min="0" max="3" step="0.1" value="1" class="bigSlider">
+            <p class="settingHint">Ruffles the spiral so it looks like wind instead of clockwork.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── COLOUR ── -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Colour</div>
+
+        <div class="settingRow" data-key="colorMode">
+          <div class="settingRowInner">
+            <span class="settingName">Scheme</span>
+            <span class="settingVal" id="colorModeVal">Gradient</span>
+          </div>
+          <div class="settingControl">
+            <select id="colorMode" class="bigSelect">
+              <option value="solid">Solid</option>
+              <option value="gradient" selected>Gradient (2 colours)</option>
+              <option value="tricolor">Tri-colour (3 stops)</option>
+              <option value="multistop">Multi-stop (4 colours)</option>
+              <option value="spectrum">Spectrum (full rainbow)</option>
+              <option value="monochrome">Monochrome ramp</option>
+              <option value="duotone">Duotone</option>
+              <option value="complementary">Complementary</option>
+              <option value="splitcomp">Split-complementary</option>
+              <option value="analogous">Analogous</option>
+              <option value="triadic">Triadic</option>
+              <option value="tetradic">Tetradic</option>
+              <option value="warm">Warm palette</option>
+              <option value="cool">Cool palette</option>
+              <option value="noise">Noise-driven</option>
+            </select>
+            <p class="settingHint">The auto schemes build themselves from Colour 1. Pick a darker or paler shade there and the whole scheme follows.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="color1" id="color1Row">
+          <div class="settingRowInner">
+            <span class="settingName">Colour 1</span>
+            <span class="colorDot" id="color1Dot" style="background:#3b82f6;"></span>
+          </div>
+          <div class="settingControl"></div>
+          <input type="hidden" id="color1" value="#3b82f6">
+        </div>
+
+        <div class="settingRow" data-key="color2" id="color2Row">
+          <div class="settingRowInner">
+            <span class="settingName">Colour 2</span>
+            <span class="colorDot" id="color2Dot" style="background:#a855f7;"></span>
+          </div>
+          <div class="settingControl"></div>
+          <input type="hidden" id="color2" value="#a855f7">
+        </div>
+
+        <div class="settingRow" data-key="color3" id="color3Row">
+          <div class="settingRowInner">
+            <span class="settingName">Colour 3</span>
+            <span class="colorDot" id="color3Dot" style="background:#f472b6;"></span>
+          </div>
+          <div class="settingControl"></div>
+          <input type="hidden" id="color3" value="#f472b6">
+        </div>
+
+        <div class="settingRow" data-key="color4" id="color4Row">
+          <div class="settingRowInner">
+            <span class="settingName">Colour 4</span>
+            <span class="colorDot" id="color4Dot" style="background:#34d399;"></span>
+          </div>
+          <div class="settingControl"></div>
+          <input type="hidden" id="color4" value="#34d399">
+        </div>
+      </div>
+
+      <!-- ── BACKGROUND ── -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Background</div>
+
+        <div class="settingRow" data-key="bgStyle">
+          <div class="settingRowInner">
+            <span class="settingName">Style</span>
+            <span class="settingVal" id="bgStyleVal">Solid</span>
+          </div>
+          <div class="settingControl">
+            <select id="bgStyle" class="bigSelect">
+              <option value="solid" selected>Solid</option>
+              <option value="linear">Gradient, top to bottom</option>
+              <option value="diagonal">Gradient, diagonal</option>
+              <option value="radial">Gradient, out from the centre</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="bgColor" id="bgColorRow">
+          <div class="settingRowInner">
+            <span class="settingName">Background</span>
+            <span class="colorDot" id="bgColorDot" style="background:#0d0f16;"></span>
+          </div>
+          <div class="settingControl"></div>
+          <input type="hidden" id="bgColor" value="#0d0f16">
+        </div>
+
+        <div class="settingRow" data-key="bgColor2" id="bgColor2Row">
+          <div class="settingRowInner">
+            <span class="settingName">Background 2</span>
+            <span class="colorDot" id="bgColor2Dot" style="background:#1b2033;"></span>
+          </div>
+          <div class="settingControl"></div>
+          <input type="hidden" id="bgColor2" value="#1b2033">
+        </div>
+
+        <div class="settingRow" data-key="bgTransparent">
+          <div class="settingRowInner">
+            <span class="settingName">Transparent bg</span>
+            <span class="settingVal" id="bgTransparentVal">Off</span>
+          </div>
+          <div class="settingControl">
+            <div class="toggleWrap">
+              <button class="toggleBtn" id="bgTransparentToggle" data-on="false" type="button">Off</button>
+            </div>
+            <p class="settingHint">Saved PNGs keep a see-through background. JPG always fills it with your colour.</p>
+          </div>
+          <input type="hidden" id="bgTransparent" value="false">
+        </div>
+      </div>
+
+      <!-- ── FINISH ── -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Finish</div>
+
+        <div class="settingRow" data-key="finish">
+          <div class="settingRowInner">
+            <span class="settingName">Finish</span>
+            <span class="settingVal" id="finishVal">None</span>
+          </div>
+          <div class="settingControl">
+            <select id="finish" class="bigSelect">
+              <option value="none" selected>None (flat)</option>
+              <option value="grain">Paper grain</option>
+              <option value="vignette">Vignette</option>
+              <option value="both">Grain and vignette</option>
+            </select>
+            <p class="settingHint">Grain and a soft dark edge make the picture read as printed rather than flat screen colour.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── OUTPUT ── -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Output</div>
+
+        <div class="settingRow" data-key="size">
+          <div class="settingRowInner">
+            <span class="settingName">Size</span>
+            <span class="settingVal" id="sizeVal">Square 1500×1500</span>
+          </div>
+          <div class="settingControl">
+            <select id="size" class="bigSelect">
+              <option value="square" selected>Square 1500×1500</option>
+              <option value="portrait">Portrait 1080×1620</option>
+              <option value="landscape">Landscape 1920×1080</option>
+              <option value="a17">Samsung A17 1080×2340</option>
+              <option value="desktop">Desktop 1920×1080</option>
+              <option value="large">Large 3000×3000</option>
+              <option value="print">Print 4000×4000</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="format">
+          <div class="settingRowInner">
+            <span class="settingName">File type</span>
+            <span class="settingVal" id="formatVal">PNG</span>
+          </div>
+          <div class="settingControl">
+            <select id="format" class="bigSelect">
+              <option value="png" selected>PNG (sharp, can be transparent)</option>
+              <option value="jpg">JPG (smaller file)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="filename">
+          <div class="settingRowInner">
+            <span class="settingName">File name</span>
+            <span class="settingVal" id="filenameVal">flowfield</span>
+          </div>
+          <div class="settingControl">
+            <input type="text" id="filename" class="bigText" value="flowfield" spellcheck="false" autocapitalize="off" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SAVED LOOKS ── -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Saved looks</div>
+
+        <div class="settingRow" data-key="presets">
+          <div class="settingRowInner">
+            <span class="settingName">My presets</span>
+            <span class="settingVal" id="presetCountVal">0</span>
+          </div>
+          <div class="settingControl">
+            <select id="presetList" class="bigSelect"><option value="">— none saved —</option></select>
+            <div class="btnTrio">
+              <button id="btnSavePreset" class="wideBtn" type="button">Save current</button>
+              <button id="btnLoadPreset" class="wideBtn" type="button">Load</button>
+              <button id="btnDeletePreset" class="wideBtn danger" type="button">Delete</button>
+            </div>
+            <p class="settingHint">Saves every setting and colour on this phone only.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settingsList -->
+  </div><!-- /sheet -->
+
+</div><!-- /appWrap -->
+
+<!-- ── Custom colour picker ── -->
+<div id="colorPickerOverlay" class="cpOverlay hidden">
+  <div class="cpPanel">
+    <div class="cpTitle" id="cpTitle">Pick a colour</div>
+    <div class="cpSLWrap">
+      <canvas id="cpSLCanvas"></canvas>
+      <div id="cpSLCursor" class="cpCursor"></div>
+    </div>
+    <div class="cpHueWrap">
+      <canvas id="cpHueCanvas"></canvas>
+      <div id="cpHueCursor" class="cpHueCursor"></div>
+    </div>
+    <div class="cpHexRow">
+      <span class="cpHexLabel">#</span>
+      <input type="text" id="cpHexInput" class="cpHexInput" maxlength="6" spellcheck="false" autocomplete="off">
+      <div id="cpHexPreview" class="cpHexPreview"></div>
+    </div>
+    <div class="cpPresets" id="cpPresets"></div>
+    <div class="cpButtons">
+      <button class="cpBtn" id="cpCancel" type="button">Cancel</button>
+      <button class="cpBtn primary" id="cpApply" type="button">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Small confirmation message ── -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="flow-field.js"></script>
+<script src="flow-app.js"></script>
+</body>
+</html>
