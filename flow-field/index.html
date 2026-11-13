@@ -17,6 +17,7 @@
 
   <!-- ── Top bar ── -->
   <div class="topBar">
+    <a class="homeBtn" href="../index.html" aria-label="Back to Math Gen" title="Back to Math Gen">&#8249;</a>
     <span class="topTitle">Flow Field</span>
     <button id="btnRandomize" class="iconBtn" title="Randomize" type="button">⟳</button>
     <button id="btnExport" class="iconBtn" title="Save image" type="button">↓</button>
@@ -459,6 +460,19 @@
           </div>
           <input type="hidden" id="bgTransparent" value="false">
         </div>
+
+        <div class="settingRow" data-key="bgHost" id="bgHostRow">
+          <div class="settingRowInner">
+            <span class="settingName">Backdrop</span>
+            <span class="settingVal" id="bgHostVal">Off</span>
+          </div>
+          <div class="settingControl">
+            <div class="toggleWrap">
+              <button class="toggleBtn" id="bgHostToggle" data-on="false" type="button">Backdrop: off</button>
+            </div>
+            <p class="settingHint">Paints the image saved in the Backdrop tool behind the artwork.</p>
+          </div>
+        </div>
       </div>
 
       <!-- ── FINISH ── -->
@@ -582,6 +596,8 @@
 <!-- ── Small confirmation message ── -->
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<script src="../shared/backdrop-engine.js"></script>
+<script src="../shared/bg-host.js"></script>
 <script src="flow-field.js"></script>
 <script src="flow-app.js"></script>
 </body>

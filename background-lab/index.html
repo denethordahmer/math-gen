@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>Backdrop</title>
+<link rel="stylesheet" href="backdrop.css">
+</head>
+<body>
+<div class="appWrap">
+
+  <canvas id="mainCanvas"></canvas>
+
+  <div class="topBar">
+    <a class="homeBtn" href="../index.html" aria-label="Back to Math Gen" title="Back to Math Gen">&#8249;</a>
+    <span class="topTitle">Backdrop</span>
+    <button id="btnRandomize" class="iconBtn" title="Randomize">⟳</button>
+    <button id="btnExport" class="iconBtn" title="Save image">↓</button>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="sheetHandle" id="sheetHandle">
+      <div class="sheetPill"></div>
+      <span class="sheetLabel" id="sheetLabel">Woven</span>
+      <button id="btnGenerate" class="generateBtn">Use</button>
+    </div>
+    <div class="settingsList" id="settingsList">
+
+      <!-- STYLE -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Style</div>
+
+        <div class="settingRow" data-key="style">
+          <div class="settingRowInner"><span class="settingName">Style</span><span class="settingVal" id="styleVal">Weave</span></div>
+          <div class="settingControl">
+            <select id="style" class="bigSelect">
+              <optgroup label="Woven">
+                <option value="weave" selected>Multicolour weave</option>
+                <option value="tartan">Tartan</option>
+                <option value="plaid">Plaid</option>
+                <option value="herringbone">Herringbone</option>
+                <option value="twill">Twill</option>
+                <option value="basket">Basket weave</option>
+                <option value="ikat">Ikat</option>
+                <option value="kilim">Kilim</option>
+                <option value="shibori">Shibori</option>
+                <option value="damask">Damask</option>
+                <option value="jacquard">Jacquard</option>
+              </optgroup>
+              <optgroup label="Paper and print">
+                <option value="cyanotype">Cyanotype</option>
+                <option value="paper">Cold-press paper</option>
+                <option value="suminagashi">Suminagashi</option>
+              </optgroup>
+              <optgroup label="Geometric">
+                <option value="grid">Grid</option>
+                <option value="dots">Dot screen</option>
+              </optgroup>
+              <optgroup label="Light">
+                <option value="glow">Radial glow</option>
+                <option value="smoke">Smoke</option>
+              </optgroup>
+              <optgroup label="Intricate">
+                <option value="guilloche">Guilloche engraving</option>
+                <option value="starquilt">Star quilt</option>
+                <option value="filament">Marbled filament</option>
+                <option value="moire">Moiré interference</option>
+              </optgroup>
+              <optgroup label="Symmetric">
+                <option value="quasicrystal">Quasicrystal</option>
+                <option value="hyperbolic">Hyperbolic tiling</option>
+                <option value="cymatic">Cymatic plate</option>
+                <option value="kaleido">Kaleidoscope fold</option>
+                <option value="rosewindow">Rose window</option>
+                <option value="peacock">Peacock plume</option>
+                <option value="harmonograph">Harmonograph rosette</option>
+                <option value="cosmati">Cosmati floor</option>
+              </optgroup>
+            </select>
+            <button id="btnShuffleStyle" class="wideBtn" type="button">Pick a style for me</button>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="seed">
+          <div class="settingRowInner"><span class="settingName">Seed</span><span class="settingVal" id="seedVal">backdrop</span></div>
+          <div class="settingControl">
+            <input type="text" id="seed" class="bigText" value="backdrop" autocomplete="off" spellcheck="false">
+            <button id="btnNewSeed" class="wideBtn" type="button">New seed</button>
+            <p class="settingHint">Same seed and same settings always give the same background.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STYLE DETAIL (only shown for styles that have their own settings) -->
+      <div class="settingsGroup" id="styleDetailGroup" hidden>
+        <div class="groupLabel">Style detail</div>
+        <div id="styleDetailRows"></div>
+      </div>
+
+      <!-- COMPOSITION -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Composition</div>
+
+        <div class="settingRow" data-key="scale">
+          <div class="settingRowInner"><span class="settingName">Scale</span><span class="settingVal" id="scaleVal">50</span></div>
+          <div class="settingControl">
+            <input type="range" id="scale" min="0" max="100" step="1" value="50" class="bigSlider">
+            <p class="settingHint">Size of the pattern. Low is fine and dense, high is broad.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="rotation">
+          <div class="settingRowInner"><span class="settingName">Rotation</span><span class="settingVal" id="rotationVal">0°</span></div>
+          <div class="settingControl">
+            <input type="range" id="rotation" min="0" max="90" step="5" value="0" class="bigSlider">
+          </div>
+        </div>
+      </div>
+
+      <!-- COLOUR -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Colour</div>
+
+        <div class="settingRow" data-key="palette">
+          <div class="settingRowInner"><span class="settingName">Palette</span><span class="settingVal" id="paletteVal">Ink</span></div>
+          <div class="settingControl">
+            <select id="palette" class="bigSelect">
+              <option value="ink" selected>Ink</option>
+              <option value="forest">Forest</option>
+              <option value="linen">Linen</option>
+              <option value="indigo">Indigo</option>
+              <option value="clay">Clay</option>
+              <option value="slate">Slate</option>
+              <option value="sage">Sage</option>
+              <option value="plum">Plum</option>
+              <option value="wheat">Wheat</option>
+              <option value="rust">Rust</option>
+              <option value="ice">Ice</option>
+              <option value="paper">Paper</option>
+              <option value="carbon">Carbon</option>
+              <option value="blush">Blush</option>
+            </select>
+            <div class="swatchGrid" id="swatchGrid"></div>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="colors">
+          <div class="settingRowInner"><span class="settingName">Colours</span><span class="settingVal" id="colorsVal">6</span></div>
+          <div class="settingControl">
+            <input type="range" id="colors" min="2" max="6" step="1" value="6" class="bigSlider">
+            <p class="settingHint">How many colours from the palette to use.</p>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="contrast">
+          <div class="settingRowInner"><span class="settingName">Contrast ceiling</span><span class="settingVal" id="contrastVal">60</span></div>
+          <div class="settingControl">
+            <input type="range" id="contrast" min="0" max="100" step="5" value="60" class="bigSlider">
+            <p class="settingHint">Keeps the background quiet enough that fine artwork still reads on top.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEXTURE AND LIGHT -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Texture and light</div>
+
+        <div class="settingRow" data-key="grain">
+          <div class="settingRowInner"><span class="settingName">Grain</span><span class="settingVal" id="grainVal">0</span></div>
+          <div class="settingControl">
+            <input type="range" id="grain" min="0" max="100" step="5" value="0" class="bigSlider">
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="vignette">
+          <div class="settingRowInner"><span class="settingName">Vignette</span><span class="settingVal" id="vignetteVal">0</span></div>
+          <div class="settingControl">
+            <input type="range" id="vignette" min="0" max="100" step="5" value="0" class="bigSlider">
+          </div>
+        </div>
+      </div>
+
+      <!-- SEND -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Send to</div>
+
+        <div class="settingRow" data-key="send">
+          <div class="settingRowInner"><span class="settingName">Use as background</span><span class="settingVal" id="sendVal">—</span></div>
+          <div class="settingControl">
+            <button class="wideBtn" type="button" data-open="flow-field">Flow Field</button>
+            <button class="wideBtn" type="button" data-open="inkwork-tiles">Inkwork Tiles</button>
+            <button class="wideBtn" type="button" data-open="thicket">Thicket</button>
+            <p class="settingHint">Opens that generator with this background already behind the artwork. The background is redrawn at the exact size you save.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- OUTPUT -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Output</div>
+
+        <div class="settingRow" data-key="size">
+          <div class="settingRowInner"><span class="settingName">Size</span><span class="settingVal" id="sizeVal">Square</span></div>
+          <div class="settingControl">
+            <select id="size" class="bigSelect">
+              <option value="square">Square 1500×1500</option>
+              <option value="portrait" selected>Portrait 1080×1620</option>
+              <option value="a17">Samsung A17 1080×2340</option>
+              <option value="landscape">Landscape 1920×1080</option>
+              <option value="large">Large 3000×3000</option>
+              <option value="print">Print 4000×4000</option>
+              <option value="phone">My phone 1080×2400</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="filename">
+          <div class="settingRowInner"><span class="settingName">File name</span><span class="settingVal" id="filenameVal">backdrop</span></div>
+          <div class="settingControl">
+            <input type="text" id="filename" class="bigText" value="backdrop" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- handoff panel -->
+  <div class="handoff" id="handoff">
+    <div class="handoffBody">
+      <div class="handoffTitle">Open in which tool?</div>
+      <div class="handoffNote">This background is saved and will sit behind the artwork. You can change it there.</div>
+      <button class="handoffBtn" data-open="flow-field"><span>Flow Field</span><small>8 styles</small></button>
+      <button class="handoffBtn" data-open="inkwork-tiles"><span>Inkwork Tiles</span><small>11 styles</small></button>
+      <button class="handoffBtn" data-open="thicket"><span>Thicket</span><small>10 styles</small></button>
+      <button class="handoffClose" id="handoffClose" type="button">Not now</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="../shared/backdrop-engine.js"></script>
+<script src="backdrop-app.js"></script>
+</body>
+</html>

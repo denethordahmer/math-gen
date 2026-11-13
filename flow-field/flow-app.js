@@ -30,6 +30,7 @@
     "finish", "size", "format", "filename"
   ];
   var COLOR_IDS = ["color1", "color2", "color3", "color4", "bgColor", "bgColor2"];
+  var BG_ON_KEY = "mathgen_bg_on_flow";
 
   var SIZES = {
     square:    [1500, 1500],
@@ -293,7 +294,9 @@
     target.width = W;
     target.height = H;
     var ctx = target.getContext("2d");
-    paintBackground(ctx, W, H, s);
+    ctx.clearRect(0, 0, W, H);
+    var paintedByHost = withBg && window.BgHost && window.BgHost.enabled("flow") && window.BgHost.paint(ctx, W, H);
+    if (withBg && !paintedByHost) paintBackground(ctx, W, H, s);
     /* a touch of easing so background-only changes still clear cleanly */
     ctx.save();
     FlowField.draw(ctx, W, H, s);
@@ -490,6 +493,29 @@
     updateBgRows();
   }
 
+  /* The row shows the switch itself: stored choice first, then a ?bg=1 visit. */
+  function hostOn() {
+    var saved = null;
+    try { saved = localStorage.getItem(BG_ON_KEY); } catch (e) { saved = null; }
+    if (saved === "1") return true;
+    if (saved === "0") return false;
+    return (window.location.search || "").indexOf("bg=1") !== -1;
+  }
+
+  function setHost(on, persist) {
+    if (persist !== false) {
+      try {
+        if (on) localStorage.setItem(BG_ON_KEY, "1");
+        else localStorage.setItem(BG_ON_KEY, "0");
+      } catch (e) { /* storage may be unavailable; the row still switches */ }
+    }
+    var tg = $("bgHostToggle");
+    if (!tg) return;
+    tg.setAttribute("data-on", on ? "true" : "false");
+    tg.textContent = on ? "Backdrop: on" : "Backdrop: off";
+    $("bgHostVal").textContent = on ? "On" : "Off";
+  }
+
   /* -----------------------------------------------------------------------
      SHEET AND ROWS
   ----------------------------------------------------------------------- */
@@ -544,6 +570,12 @@
   $("bgTransparentToggle").addEventListener("click", function (e) {
     e.stopPropagation();
     setTransparent(v("bgTransparent") !== "true");
+    schedule();
+  });
+
+  $("bgHostToggle").addEventListener("click", function (e) {
+    e.stopPropagation();
+    setHost(!hostOn());
     schedule();
   });
 
@@ -842,6 +874,7 @@
   ----------------------------------------------------------------------- */
   COLOR_IDS.forEach(function (id) { setColor(id, $(id).value); });
   setTransparent(false);
+  setHost(hostOn(), false);
   refreshPresetList();
   syncAllBadges();
   updateVisibility();

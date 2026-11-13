@@ -1,0 +1,345 @@
+/* Backdrop — background generator.
+   Same shell as the other three tools: full-bleed canvas, top bar, bottom sheet.
+   Colours are the neutral dark set; the accent is a warm sand that reads against
+   every palette the tool can produce. */
+@font-face {
+  font-family: "BackdropTitle";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("../fonts/cinzeldecorative.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "BackdropUI";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../fonts/spacegrotesk.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --bg: #0b0d12;
+  --panel: #14171f;
+  --panel-2: #1a1e28;
+  --panel-3: #222735;
+  --border: #262b38;
+  --border-strong: #374050;
+  --text: #eef0f7;
+  --text-dim: #8b93a8;
+  --text-dimmer: #5d6379;
+  --accent: #c9a24a;
+  --accent-bright: #e8d28a;
+  --accent-glow: rgba(201, 162, 74, 0.32);
+  --danger: #ff8a7a;
+  --sheet-radius: 22px;
+  --row-h: 56px;
+  --sheet-open-h: 64vh;
+  --sheet-open-h: 64dvh;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+button, input, select, textarea { font-family: inherit; color: inherit; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "BackdropUI", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+.appWrap { position: fixed; inset: 0; overflow: hidden; }
+#mainCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+
+/* top bar */
+.topBar {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: calc(52px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 14px 0;
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  background: linear-gradient(to bottom, rgba(11, 13, 18, 0.9) 0%, transparent 100%);
+  z-index: 50;
+}
+/* Back to the hub. Pinned left so the title can stay centred on the screen. */
+.homeBtn {
+  position: absolute;
+  left: 14px; top: calc(env(safe-area-inset-top, 0px) + 4px);
+  text-decoration: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  line-height: 1;
+  padding-bottom: 4px;
+  color: var(--text);
+  border-radius: 50%;
+}
+/* Centred on the screen, not in the space left of the buttons. */
+.topTitle {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  text-align: center; pointer-events: none;
+  font-family: "BackdropTitle", Georgia, serif;
+  font-size: clamp(0.92rem, 4.4vw, 1.18rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  color: var(--text);
+  white-space: nowrap;
+}
+.iconBtn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: rgba(20, 23, 31, 0.85);
+  color: var(--text);
+  font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: transform .1s ease;
+}
+.iconBtn:active { transform: scale(.9); }
+
+/* sheet */
+.sheet {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex; flex-direction: column;
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  background: var(--panel);
+  border-top: 1px solid var(--border-strong);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, .6);
+  max-height: calc(var(--row-h) + 14px + env(safe-area-inset-bottom, 0px));
+  transition: max-height .35s cubic-bezier(.32, .72, 0, 1);
+  overflow: hidden;
+}
+.sheet.open { max-height: calc(var(--sheet-open-h) + env(safe-area-inset-bottom, 0px)); }
+.sheetHandle {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; flex-shrink: 0;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+}
+.sheetPill { width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); flex-shrink: 0; }
+.sheetLabel {
+  flex: 1;
+  font-size: 0.75rem; font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.16em; text-transform: uppercase;
+}
+.generateBtn {
+  background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+  color: #14100a;
+  border: none; border-radius: 20px;
+  padding: 10px 20px;
+  font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; letter-spacing: 0.05em;
+  box-shadow: 0 4px 14px var(--accent-glow);
+  flex-shrink: 0;
+  transition: transform .1s ease;
+}
+.generateBtn:active { transform: scale(.95); }
+
+/* settings list */
+.settingsList {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.settingsList::-webkit-scrollbar { display: none; }
+.settingsGroup { margin-bottom: 2px; }
+.groupLabel {
+  font-family: "BackdropTitle", Georgia, serif;
+  font-size: 0.78rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--accent);
+  padding: 12px 16px 5px;
+  border-bottom: 1px solid var(--border);
+}
+.settingRow { border-bottom: 1px solid var(--border); cursor: pointer; overflow: hidden; }
+.settingRow:last-child { border-bottom: none; }
+.settingRow:active .settingRowInner { background: var(--panel-3); }
+.settingRowInner {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: var(--row-h); padding: 0 16px; gap: 12px;
+  transition: background .12s ease;
+}
+.settingName { font-size: 0.95rem; font-weight: 500; flex: 1; }
+.settingVal {
+  font-size: 0.83rem; font-weight: 600;
+  color: var(--accent-bright);
+  background: var(--panel-3);
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px; text-align: center;
+  white-space: nowrap; max-width: 55%;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.colorDot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border-strong); flex-shrink: 0; }
+.settingControl { display: none; padding: 4px 16px 18px; }
+.settingRow.active .settingControl { display: block; }
+.settingRow.active .settingRowInner { background: var(--panel-2); }
+.settingRow.active .settingName { color: var(--accent-bright); }
+.settingHint { margin-top: 10px; font-size: 0.8rem; line-height: 1.5; color: var(--text-dim); }
+.settingRow.dimmed .settingName, .settingRow.dimmed .colorDot { opacity: .35; }
+
+/* slider */
+.bigSlider {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 48px;
+  background: transparent; cursor: pointer;
+  touch-action: pan-x; display: block;
+}
+.bigSlider::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 3px;
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+}
+.bigSlider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--accent-bright);
+  margin-top: -11px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+}
+.bigSlider::-moz-range-track { height: 6px; border-radius: 3px; background: var(--panel-3); }
+.bigSlider::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--accent-bright);
+}
+
+/* select and text */
+.bigSelect {
+  width: 100%;
+  background: var(--panel-3);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 14px 36px 14px 14px;
+  font-size: 0.98rem; font-weight: 500;
+  cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-dim) 50%),
+    linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
+  background-position: calc(100% - 16px) calc(50% - 2px), calc(100% - 11px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  outline: none;
+}
+.bigSelect:focus { border-color: var(--accent); }
+.bigText {
+  width: 100%;
+  background: var(--panel-3);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 16px; font-weight: 500;
+  outline: none;
+}
+.bigText:focus { border-color: var(--accent); }
+
+/* buttons inside rows */
+.wideBtn {
+  width: 100%; margin-top: 10px;
+  background: var(--panel-3);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 0.95rem; font-weight: 600;
+  cursor: pointer;
+  transition: transform .08s ease;
+}
+.wideBtn:active { transform: scale(.98); }
+.wideBtn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+  color: #14100a; border-color: transparent;
+}
+
+/* swatch grid for palettes */
+.swatchGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px; }
+.swatch {
+  height: 44px; border-radius: 10px;
+  border: 2px solid transparent;
+  cursor: pointer; overflow: hidden;
+  display: flex;
+}
+.swatch span { flex: 1; }
+.swatch.on { border-color: var(--accent-bright); }
+
+/* toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateY(10px);
+  background: var(--panel-3);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.82rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+  z-index: 200;
+  max-width: 80vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* handoff panel */
+.handoff {
+  position: fixed; inset: 0;
+  background: rgba(5, 6, 9, 0.82);
+  display: none;
+  align-items: flex-end;
+  z-index: 300;
+}
+.handoff.show { display: flex; }
+.handoffBody {
+  width: 100%;
+  background: var(--panel);
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  border-top: 1px solid var(--border-strong);
+  padding: 20px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+}
+.handoffTitle {
+  font-family: "BackdropTitle", Georgia, serif;
+  font-size: 1.2rem; font-weight: 600;
+  margin-bottom: 4px;
+}
+.handoffNote { font-size: 0.82rem; line-height: 1.5; color: var(--text-dim); margin-bottom: 16px; }
+.handoffBtn {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 1rem; font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 9px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.handoffBtn:active { background: var(--panel-3); }
+.handoffBtn small { color: var(--text-dim); font-weight: 400; font-size: 0.76rem; }
+.handoffClose {
+  width: 100%; margin-top: 6px;
+  background: none; border: none;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  padding: 12px;
+  cursor: pointer;
+}

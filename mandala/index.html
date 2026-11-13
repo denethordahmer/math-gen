@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>Mandala</title>
+<link rel="stylesheet" href="mandala.css">
+</head>
+<body>
+<div class="appWrap">
+
+  <canvas id="mainCanvas"></canvas>
+
+  <div class="topBar">
+    <a class="homeBtn" href="../index.html" aria-label="Back to Math Gen" title="Back to Math Gen">&#8249;</a>
+    <span class="topTitle">Mandala</span>
+    <button id="btnRandomize" class="iconBtn" title="Randomise everything">⟳</button>
+    <button id="btnExport" class="iconBtn" title="Save image">↓</button>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="sheetHandle" id="sheetHandle">
+      <div class="sheetPill"></div>
+      <span class="sheetLabel" id="sheetLabel">Kaleido fractal</span>
+      <button id="btnGenerate" class="generateBtn">Keep</button>
+    </div>
+    <div class="settingsList" id="settingsList">
+
+      <!-- STYLE -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Style</div>
+
+        <div class="settingRow" data-key="style">
+          <div class="settingRowInner"><span class="settingName">Style</span><span class="settingVal" id="styleVal">Kaleido fractal</span></div>
+          <div class="settingControl">
+            <select id="style" class="bigSelect">
+              <optgroup label="Fractal">
+                <option value="kaleido" selected>Kaleido fractal</option>
+                <option value="filigree">Orbit filigree</option>
+                <option value="bloom">Bloom field</option>
+              </optgroup>
+              <optgroup label="Drawn">
+                <option value="lattice">Lattice mandala</option>
+                <option value="rosette">Spirograph rosette</option>
+                <option value="tunnel">Tunnel rings</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="seed">
+          <div class="settingRowInner"><span class="settingName">Seed</span><span class="settingVal" id="seedVal">—</span></div>
+          <div class="settingControl inline">
+            <input type="text" id="seed" class="bigInput" placeholder="any words" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button id="btnNewSeed" class="miniBtn" type="button">New</button>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="shuffle">
+          <div class="settingRowInner"><span class="settingName">Shuffle style</span><span class="settingVal">random style, same seed</span></div>
+          <div class="settingControl">
+            <button id="btnShuffleStyle" class="wideBtn" type="button">Shuffle</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STYLE DETAIL (built by the app) -->
+      <div class="settingsGroup" id="styleDetailGroup">
+        <div class="groupLabel">Style detail</div>
+        <div id="styleDetailRows"></div>
+      </div>
+
+      <!-- COLOUR -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Colour</div>
+
+        <div class="settingRow" data-key="palette">
+          <div class="settingRowInner"><span class="settingName">Palette</span><span class="settingVal" id="paletteVal">spectrum</span></div>
+          <div class="settingControl">
+            <!-- the palette is chosen by the swatches; this field holds the value
+                 so the app reads it the same way as every other control -->
+            <input type="hidden" id="palette" value="spectrum">
+            <div class="swatchGrid" id="swatchGrid"></div>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="contrast">
+          <div class="settingRowInner"><span class="settingName">Saturation</span><span class="settingVal" id="contrastVal">70</span></div>
+          <div class="settingControl">
+            <input type="range" id="contrast" class="bigSlider" min="0" max="100" step="5" value="70">
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="rotation">
+          <div class="settingRowInner"><span class="settingName">Rotation</span><span class="settingVal" id="rotationVal">0°</span></div>
+          <div class="settingControl">
+            <input type="range" id="rotation" class="bigSlider" min="0" max="330" step="30" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- FINISH -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Finish</div>
+
+        <div class="settingRow" data-key="grain">
+          <div class="settingRowInner"><span class="settingName">Grain</span><span class="settingVal" id="grainVal">0</span></div>
+          <div class="settingControl">
+            <input type="range" id="grain" class="bigSlider" min="0" max="30" step="5" value="0">
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="vignette">
+          <div class="settingRowInner"><span class="settingName">Vignette</span><span class="settingVal" id="vignetteVal">0</span></div>
+          <div class="settingControl">
+            <input type="range" id="vignette" class="bigSlider" min="0" max="45" step="5" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- OUTPUT -->
+      <div class="settingsGroup">
+        <div class="groupLabel">Output</div>
+
+        <div class="settingRow" data-key="size">
+          <div class="settingRowInner"><span class="settingName">Size</span><span class="settingVal" id="sizeVal">Square 1500</span></div>
+          <div class="settingControl">
+            <select id="size" class="bigSelect">
+              <option value="square" selected>Square 1500×1500</option>
+              <option value="portrait">Portrait 1080×1620</option>
+              <option value="a17">Samsung A17 1080×2340</option>
+              <option value="landscape">Landscape 1920×1080</option>
+              <option value="large">Large 3000×3000</option>
+              <option value="print">Print 4000×4000</option>
+              <option value="phone">My phone 1080×2400</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="filename">
+          <div class="settingRowInner"><span class="settingName">File name</span><span class="settingVal" id="filenameVal">—</span></div>
+          <div class="settingControl">
+            <input type="text" id="filename" class="bigInput" placeholder="mandala" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="settingRow" data-key="save">
+          <div class="settingRowInner"><span class="settingName">Save image</span><span class="settingVal">PNG at the chosen size</span></div>
+          <div class="settingControl">
+            <button id="btnSaveWide" class="wideBtn" type="button">Save PNG</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="mandala-engine.js"></script>
+<script src="mandala-app.js"></script>
+</body>
+</html>
