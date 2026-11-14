@@ -26,6 +26,10 @@ Backdrop saves its recipe (style, seed, palette and settings) under one storage 
 
 The drawing code is `shared/backdrop-engine.js`, shared by all the tools. `shared/bg-host.js` is the small helper the generators call.
 
+## Shared code
+
+`shared/app-kit.js` holds what every tool used to copy: the preview renderer, image saving, saved looks, toasts and the Backdrop switch. The preview draws a quick low-res version first and the sharp one once the controls go quiet. See `docs/app-kit.md`.
+
 ## How to open it
 
 Tap `index.html` in a file manager and open it with a browser. Tapping a card opens that generator in the same browser tab. Every tool has a `‹` button at the
@@ -46,7 +50,7 @@ math-gen/
   index.html          the hub
   README.md           this file
   docs/               one page per tool, for the technical detail
-  shared/             the background engine and the host helper
+  shared/             the background engine, the host helper and the app kit
   fonts/              hub wordmark and body fonts
   icon-192.png        hub icon
   .github/            the one upload workflow
@@ -61,7 +65,8 @@ no README and no GitHub folder of their own; those belong to the toolbox.
 1. Copy its folder in beside the others, so it sits next to `flow-field`, `inkwork-tiles`, `thicket` and `background-lab`.
 2. In `index.html`, copy one `<a class="card">` block and change the `href`, the icon path, the name, the description and the style count. The accent dot colour is set inline on the `swatch` span.
 3. Add the tool to the table above, and a page to `docs/` if it needs one.
-4. In the tool's top bar, add `<a class="homeBtn" href="../index.html">` with a `‹` in it, plus a
+4. Load `../shared/app-kit.js` before the tool's app script and use it for the preview, saving and saved looks (see `docs/app-kit.md`).
+5. In the tool's top bar, add `<a class="homeBtn" href="../index.html">` with a `‹` in it, plus a
    `.homeBtn` rule in its CSS, so it can get back to the hub.
 
 ## How the toolbox is packaged

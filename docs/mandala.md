@@ -17,7 +17,7 @@ open the toolbox hub and tap its card, or open `mandala/index.html` directly.
 | `fonts/` | Bundled woff2 files, so the page works offline |
 | `icon/` | Icon assets, plus `iconmaker.html` to regenerate them |
 
-Script order matters: `mandala-engine.js`, then `mandala-app.js`.
+Script order matters: `mandala-engine.js`, `../shared/app-kit.js`, then `mandala-app.js`.
 
 ## Typography
 

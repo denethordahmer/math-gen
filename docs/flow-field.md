@@ -17,7 +17,7 @@ libraries: open the toolbox hub and tap its card, or open
 | `flow-app.js` | Controls, colour picker, saved looks, saving images |
 | `fonts/` | Bundled woff2 files, so the page works offline |
 
-Script order matters: `flow-field.js`, then `flow-app.js`. The drawing file
+Script order matters: `flow-field.js`, `../shared/app-kit.js`, then `flow-app.js`. The drawing file
 exposes `window.FlowField.draw(ctx, W, H, settings)`; the app file reads the
 controls and calls it. Same seed and same settings always give the same
 picture.

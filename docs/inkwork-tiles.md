@@ -16,7 +16,7 @@ Procedural tile patterns for phones. No build step, no libraries: open the toolb
 | `inkwork-engines.js` | The seven added engines |
 | `fonts/` | Bundled woff2 files, so the page works offline |
 
-Script order matters: `inkwork-engines.js`, then `inkwork-styles.js`, then
+Script order matters (`../shared/app-kit.js` goes just before `inkwork-app.js`): `inkwork-engines.js`, then `inkwork-styles.js`, then
 `inkwork-app.js`. The engines register on `window.InkworkEngines`; the styles
 file dispatches to them.
 

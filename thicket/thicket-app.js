@@ -217,27 +217,9 @@
   }
 
   /* The row shows the switch itself: stored choice first, then a ?bg=1 visit. */
-  function hostOn() {
-    var saved = null;
-    try { saved = localStorage.getItem(BG_ON_KEY); } catch (e) { saved = null; }
-    if (saved === "1") return true;
-    if (saved === "0") return false;
-    return (window.location.search || "").indexOf("bg=1") !== -1;
-  }
-
-  function setHost(on, persist) {
-    if (persist !== false) {
-      try {
-        if (on) localStorage.setItem(BG_ON_KEY, "1");
-        else localStorage.setItem(BG_ON_KEY, "0");
-      } catch (e) { /* storage may be unavailable; the row still switches */ }
-    }
-    var tg = $("bgHostToggle");
-    if (!tg) return;
-    tg.setAttribute("data-on", on ? "true" : "false");
-    tg.textContent = on ? "Backdrop: on" : "Backdrop: off";
-    $("bgHostVal").textContent = on ? "On" : "Off";
-  }
+  var hostSwitch = AppKit.hostSwitch(BG_ON_KEY, "bgHostToggle", "bgHostVal");
+  function hostOn() { return hostSwitch.isOn(); }
+  function setHost(on, persist) { hostSwitch.set(on, persist); }
 
   /* ---------- drawing ---------- */
   function getParams() {
@@ -278,17 +260,20 @@
     ThicketStyles.draw(c, W, H, p);
   }
 
-  function renderPreview() {
-    var sz = SIZES[$("size").value] || SIZES.square;
-    var f = Math.min(1, 1200 / Math.max(sz[0], sz[1]));
-    renderTo(canvas, f, $("bgTransparent").value !== "true");
-  }
+  function sizeNow() { return SIZES[$("size").value] || SIZES.square; }
 
-  var timer = null;
-  function schedule() {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(function () { timer = null; renderPreview(); }, 40);
-  }
+  /* A quick low-res pass first, the sharp pass once the controls go quiet. */
+  var render = AppKit.progressive({
+    canvas: canvas,
+    max: 1200,
+    size: sizeNow,
+    draw: function (target, w, h) {
+      var sz = sizeNow();
+      renderTo(target, w / sz[0], $("bgTransparent").value !== "true");
+    }
+  });
+  function renderPreview() { render.now(); }
+  function schedule() { render.schedule(); }
 
   function layoutCanvas() {
     canvas.style.top = "56px";
@@ -297,25 +282,19 @@
   window.addEventListener("resize", layoutCanvas);
 
   /* ---------- saving ---------- */
-  function cleanName(s) {
-    s = String(s || "").replace(/[^a-zA-Z0-9_\- ]/g, "").trim().replace(/\s+/g, "-");
-    return s || "thicket";
-  }
+  var toast = AppKit.makeToast(null, 2000);
 
   function exportImage() {
     var jpg = $("format").value === "jpg";
     var withBg = jpg || $("bgTransparent").value !== "true";
-    var out = document.createElement("canvas");
-    renderTo(out, 1, withBg);
-    out.toBlob(function (blob) {
-      if (!blob) { alert("Could not make the image. Try a smaller size."); return; }
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = cleanName($("filename").value) + (jpg ? ".jpg" : ".png");
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-    }, jpg ? "image/jpeg" : "image/png", 0.92);
+    AppKit.exportImage({
+      size: sizeNow(),
+      draw: function (out, W, H) { renderTo(out, 1, withBg); },
+      mime: jpg ? "image/jpeg" : "image/png",
+      filename: AppKit.cleanName($("filename").value, "thicket"),
+      button: $("btnExport"),
+      toast: toast
+    });
   }
 
   /* ---------- randomize ---------- */
@@ -435,25 +414,11 @@
   /* ---------- saved looks ---------- */
   var PRESET_KEY = "thicket_presets_v1";
 
-  function loadPresets() {
-    try { return JSON.parse(localStorage.getItem(PRESET_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-  function storePresets(obj) {
-    try { localStorage.setItem(PRESET_KEY, JSON.stringify(obj)); }
-    catch (e) { alert("Could not save on this phone."); }
-  }
+  var presetStore = AppKit.presets(PRESET_KEY, toast);
+  function loadPresets() { return presetStore.all(); }
+  function storePresets(obj) { presetStore.save(obj); }
   function refreshPresetList() {
-    var presets = loadPresets();
-    var list = $("presetList");
-    list.innerHTML = '<option value="">— none saved —</option>';
-    var names = Object.keys(presets);
-    names.forEach(function (n) {
-      var o = document.createElement("option");
-      o.value = n; o.textContent = n;
-      list.appendChild(o);
-    });
-    $("presetCountVal").textContent = names.length;
+    presetStore.fillList($("presetList"), $("presetCountVal"));
   }
 
   $("btnSavePreset").addEventListener("click", function (e) {

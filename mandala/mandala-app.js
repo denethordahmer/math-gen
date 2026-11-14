@@ -147,13 +147,15 @@
     window.Mandala.draw(ctx, W, H, recipe);
   }
 
-  function renderPreview() {
-    var r = readRecipe();
-    var size = SIZES[v("size")] || SIZES.square;
-    var f = Math.min(1, PREVIEW_MAX / Math.max(size[0], size[1]));
-    drawTo(canvas, Math.round(size[0] * f), Math.round(size[1] * f), r);
-    layoutCanvas();
-  }
+  /* A quick low-res pass first, the sharp pass once the controls go quiet. */
+  var render = AppKit.progressive({
+    canvas: canvas,
+    max: PREVIEW_MAX,
+    size: function () { return SIZES[v("size")] || SIZES.square; },
+    draw: function (target, w, h) { drawTo(target, w, h, readRecipe()); },
+    after: layoutCanvas
+  });
+  function renderPreview() { render.now(); }
 
   /* fit the bitmap into the space between the top bar and the sheet */
   function layoutCanvas() {
@@ -179,11 +181,7 @@
     new ResizeObserver(function () { layoutCanvas(); }).observe(sheet);
   }
 
-  var renderTimer = null;
-  function schedule() {
-    if (renderTimer) clearTimeout(renderTimer);
-    renderTimer = setTimeout(renderPreview, 40);
-  }
+  function schedule() { render.schedule(); }
 
   /* -------------------------------------------------------------- badges */
   function syncBadge(id) {
@@ -490,47 +488,19 @@
     }
   }
 
-  function toast(msg) {
-    toastEl.textContent = msg;
-    toastEl.classList.add("show");
-    setTimeout(function () { toastEl.classList.remove("show"); }, 1800);
-  }
-
-  function cleanName(s) {
-    s = String(s || "").replace(/[^a-zA-Z0-9_\- ]/g, "").trim().replace(/\s+/g, "-");
-    return s || "mandala";
-  }
+  var toastFn = AppKit.makeToast(toastEl, 1800);
+  function toast(msg) { toastFn(msg); }
 
   function exportImage() {
     var size = SIZES[v("size")] || SIZES.square;
     var recipe = readRecipe();
-    var out = document.createElement("canvas");
-    var btn = $("btnExport");
-    btn.classList.add("busy");
-    toast("Making " + size[0] + "×" + size[1] + "…");
-
-    setTimeout(function () {
-      try {
-        drawTo(out, size[0], size[1], recipe);
-      } catch (err) {
-        btn.classList.remove("busy");
-        toast("Could not draw at that size. Try a smaller one.");
-        return;
-      }
-      out.toBlob(function (blob) {
-        btn.classList.remove("busy");
-        if (!blob) { toast("Could not make the image."); return; }
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = cleanName(v("filename") || v("seed")) + ".png";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 2500);
-        toast("Saved PNG");
-      }, "image/png");
-    }, 30);
+    AppKit.exportImage({
+      size: size,
+      draw: function (out, W, H) { drawTo(out, W, H, recipe); },
+      filename: AppKit.cleanName(v("filename") || v("seed"), "mandala"),
+      button: $("btnExport"),
+      toast: toast
+    });
   }
 
   /* ---------------------------------------------------------------- start */

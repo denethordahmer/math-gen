@@ -72,16 +72,7 @@
   /* -----------------------------------------------------------------------
      SMALL CONFIRMATION MESSAGE
   ----------------------------------------------------------------------- */
-  var toastEl = $("toast"), toastTimer = null;
-  function toast(msg) {
-    toastEl.textContent = msg;
-    toastEl.classList.add("show");
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () {
-      toastEl.classList.remove("show");
-      toastTimer = null;
-    }, 2200);
-  }
+  var toast = AppKit.makeToast("toast", 2200);
 
   /* -----------------------------------------------------------------------
      COLOUR MATHS (shared with the picker only; the engine has its own copy)
@@ -287,9 +278,6 @@
      to the space on screen. Saving always redraws at full resolution.
   ----------------------------------------------------------------------- */
   var PREVIEW_MAX = 1100;
-  var renderTimer = null;
-  var rendering = false;
-
   function renderTo(target, W, H, s, withBg) {
     target.width = W;
     target.height = H;
@@ -303,31 +291,25 @@
     ctx.restore();
   }
 
-  function previewScale(s) {
-    return Math.min(1, PREVIEW_MAX / Math.max(s.W, s.H));
-  }
-
-  function renderPreview() {
-    var s = readState();
-    var f = previewScale(s);
-    var W = Math.round(s.W * f), H = Math.round(s.H * f);
-    renderTo(canvas, W, H, s, true);
-    /* the backdrop is a small copy; blurring hides the low resolution */
-    backdrop.width = 160;
-    backdrop.height = Math.round(160 * s.H / s.W);
-    var bc = backdrop.getContext("2d");
-    paintBackground(bc, backdrop.width, backdrop.height, s);
-    bc.drawImage(canvas, 0, 0, backdrop.width, backdrop.height);
-    layoutCanvas();
-  }
-
-  function schedule() {
-    if (renderTimer) clearTimeout(renderTimer);
-    renderTimer = setTimeout(function () {
-      renderTimer = null;
-      renderPreview();
-    }, 70);
-  }
+  /* A quick low-res pass first, the sharp pass once the controls go quiet. */
+  var render = AppKit.progressive({
+    canvas: canvas,
+    max: PREVIEW_MAX,
+    size: function () { var s = readState(); return [s.W, s.H]; },
+    draw: function (target, w, h) { renderTo(target, w, h, readState(), true); },
+    after: function () {
+      var s = readState();
+      /* the backdrop is a small copy; blurring hides the low resolution */
+      backdrop.width = 160;
+      backdrop.height = Math.round(160 * s.H / s.W);
+      var bc = backdrop.getContext("2d");
+      paintBackground(bc, backdrop.width, backdrop.height, s);
+      bc.drawImage(canvas, 0, 0, backdrop.width, backdrop.height);
+      layoutCanvas();
+    }
+  });
+  function renderPreview() { render.now(); }
+  function schedule() { render.schedule(); }
 
   /* fit the bitmap into the space between the top bar and the sheet */
   function layoutCanvas() {
@@ -494,27 +476,9 @@
   }
 
   /* The row shows the switch itself: stored choice first, then a ?bg=1 visit. */
-  function hostOn() {
-    var saved = null;
-    try { saved = localStorage.getItem(BG_ON_KEY); } catch (e) { saved = null; }
-    if (saved === "1") return true;
-    if (saved === "0") return false;
-    return (window.location.search || "").indexOf("bg=1") !== -1;
-  }
-
-  function setHost(on, persist) {
-    if (persist !== false) {
-      try {
-        if (on) localStorage.setItem(BG_ON_KEY, "1");
-        else localStorage.setItem(BG_ON_KEY, "0");
-      } catch (e) { /* storage may be unavailable; the row still switches */ }
-    }
-    var tg = $("bgHostToggle");
-    if (!tg) return;
-    tg.setAttribute("data-on", on ? "true" : "false");
-    tg.textContent = on ? "Backdrop: on" : "Backdrop: off";
-    $("bgHostVal").textContent = on ? "On" : "Off";
-  }
+  var hostSwitch = AppKit.hostSwitch(BG_ON_KEY, "bgHostToggle", "bgHostVal");
+  function hostOn() { return hostSwitch.isOn(); }
+  function setHost(on, persist) { hostSwitch.set(on, persist); }
 
   /* -----------------------------------------------------------------------
      SHEET AND ROWS
@@ -598,46 +562,18 @@
   /* -----------------------------------------------------------------------
      SAVING
   ----------------------------------------------------------------------- */
-  function cleanName(s) {
-    s = String(s || "").replace(/[^a-zA-Z0-9_\- ]/g, "").trim().replace(/\s+/g, "-");
-    return s || "flowfield";
-  }
-
   function exportImage() {
     var jpg = v("format") === "jpg";
     var s = readState();
     var withBg = jpg || !s.bgTransparent;
-    var out = document.createElement("canvas");
-    var btn = $("btnExport");
-    btn.classList.add("busy");
-    toast("Making " + s.W + "×" + s.H + "…");
-
-    /* give the browser a frame to show the message before the heavy work */
-    setTimeout(function () {
-      try {
-        renderTo(out, s.W, s.H, s, withBg);
-      } catch (err) {
-        btn.classList.remove("busy");
-        toast("Could not draw at that size. Try a smaller one.");
-        return;
-      }
-      out.toBlob(function (blob) {
-        btn.classList.remove("busy");
-        if (!blob) {
-          toast("Could not make the image. Try a smaller size.");
-          return;
-        }
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = cleanName(v("filename")) + (jpg ? ".jpg" : ".png");
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 2500);
-        toast(jpg ? "Saved JPG" : "Saved PNG");
-      }, jpg ? "image/jpeg" : "image/png", 0.92);
-    }, 30);
+    AppKit.exportImage({
+      size: [s.W, s.H],
+      draw: function (out, W, H) { renderTo(out, W, H, s, withBg); },
+      mime: jpg ? "image/jpeg" : "image/png",
+      filename: AppKit.cleanName(v("filename"), "flowfield"),
+      button: $("btnExport"),
+      toast: toast
+    });
   }
 
   $("btnExport").addEventListener("click", exportImage);
@@ -647,25 +583,11 @@
   ----------------------------------------------------------------------- */
   var PRESET_KEY = "flow_field_presets_v1";
 
-  function loadPresets() {
-    try { return JSON.parse(localStorage.getItem(PRESET_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-  function storePresets(obj) {
-    try { localStorage.setItem(PRESET_KEY, JSON.stringify(obj)); }
-    catch (e) { toast("Could not save on this phone."); }
-  }
+  var presetStore = AppKit.presets(PRESET_KEY, toast);
+  function loadPresets() { return presetStore.all(); }
+  function storePresets(obj) { presetStore.save(obj); }
   function refreshPresetList() {
-    var presets = loadPresets();
-    var list = $("presetList");
-    list.innerHTML = '<option value="">— none saved —</option>';
-    var names = Object.keys(presets).sort();
-    names.forEach(function (nm) {
-      var o = document.createElement("option");
-      o.value = nm; o.textContent = nm;
-      list.appendChild(o);
-    });
-    $("presetCountVal").textContent = String(names.length);
+    presetStore.fillList($("presetList"), $("presetCountVal"));
   }
 
   $("btnSavePreset").addEventListener("click", function (e) {
